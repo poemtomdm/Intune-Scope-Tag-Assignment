@@ -53,19 +53,19 @@
 #  USAGE EXAMPLES
 #  --------------
 #  # Client Secret auth:
-#  .\assignscopetag_allwindowsapps.ps1 `
+#  .\IntuneScopeTagAssignment.ps1 `
 #      -TenantId     "contoso.onmicrosoft.com" `
 #      -ClientId     "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" `
 #      -ClientSecret "your-client-secret-here"
 #
 #  # Certificate auth (by thumbprint — cert must be in the current user's cert store):
-#  .\assignscopetag_allwindowsapps.ps1 `
+#  .\IntuneScopeTagAssignment.ps1 `
 #      -TenantId              "contoso.onmicrosoft.com" `
 #      -ClientId              "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" `
 #      -CertificateThumbprint "AABBCCDDEEFF00112233445566778899AABBCCDD"
 #
 #  # Certificate auth (by .pfx file path):
-#  .\assignscopetag_allwindowsapps.ps1 `
+#  .\IntuneScopeTagAssignment.ps1 `
 #      -TenantId            "contoso.onmicrosoft.com" `
 #      -ClientId            "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" `
 #      -CertificatePath     "C:\certs\myapp.pfx" `
