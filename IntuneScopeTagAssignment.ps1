@@ -2,7 +2,7 @@
 #  SCRIPT   : Assign-IntuneScopeTags.ps1
 #  VERSION  : 2.0
 #  AUTHOR   : Tom Machado
-#  CREATED  : 2024
+#  CREATED  : 2026-06-19
 #  UPDATED  : 2026-06-21
 # ============================================================
 #
