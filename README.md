@@ -14,8 +14,6 @@
 - [Overview](#-overview)
 - [Features](#-features)
 - [Prerequisites](#-prerequisites)
-- [App Registration Setup](#-app-registration-setup)
-- [Authentication Methods](#-authentication-methods)
 - [Usage](#-usage)
 - [Parameters](#-parameters)
 - [Supported Categories & Platforms](#-supported-categories--platforms)
@@ -57,89 +55,25 @@ The script then resolves tag names to IDs and bulk-patches every matching object
 
 ## 🧰 Prerequisites
 
-Before running the script, ensure you have the following in place:
-
 | Requirement | Details |
 |---|---|
 | **PowerShell** | Version 5.1 or later (PowerShell 7+ recommended) |
 | **Microsoft Graph PowerShell SDK** | `Install-Module Microsoft.Graph -Scope CurrentUser` |
-| **Entra ID App Registration** | With the correct API permissions (see below) |
+| **Entra ID App Registration** | With `DeviceManagementApps.ReadWrite.All`, `DeviceManagementConfiguration.ReadWrite.All`, and `DeviceManagementRBAC.Read.All` (Application permissions, admin consent granted) |
 | **Role Scope Tags** | Must already exist in your Intune tenant before running |
-
-### Install the required module
-
-```powershell
-Install-Module Microsoft.Graph -Scope CurrentUser -Force
-```
-
-> If you're on a managed machine without internet access, download and install the module offline, or ask your IT administrator.
-
----
-
-## 🔑 App Registration Setup
-
-You need an **App Registration** in Microsoft Entra ID with the following configuration.
-
-### Step 1 — Create the App Registration
-
-1. Go to [Entra ID → App Registrations](https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade)
-2. Click **New registration**
-3. Name it something descriptive (e.g. `Intune-ScopeTag-Tool`)
-4. Set **Supported account types** → _Accounts in this organizational directory only_
-5. Click **Register**
-
-> 📝 After registering, copy the **Application (client) ID** and the **Directory (tenant) ID** — you'll need them as script parameters.
-
----
-
-### Step 2 — Add API Permissions
-
-Go to **API permissions → Add a permission → Microsoft Graph → Application permissions** and add:
-
-| Permission | Purpose |
-|---|---|
-| `DeviceManagementApps.ReadWrite.All` | Read and patch mobile apps |
-| `DeviceManagementConfiguration.ReadWrite.All` | Read and patch configuration profiles |
-| `DeviceManagementRBAC.Read.All` | Look up Role Scope Tag names and IDs |
-
-After adding, click **✅ Grant admin consent for [your tenant]**.
-
----
-
-### Step 3 — Choose a Credential Type
-
-#### 🔑 Option A — Client Secret
-1. Go to **Certificates & secrets → Client secrets → New client secret**
-2. Set a description and expiry, then click **Add**
-3. Copy the **Value** immediately — it will not be shown again
-
-#### 🔐 Option B — Certificate
-1. Go to **Certificates & secrets → Certificates → Upload certificate**
-2. Upload your `.cer` or `.pem` public key
-3. Note the **Thumbprint** displayed after upload — you'll use it as a parameter
-
----
-
-## 🔐 Authentication Methods
-
-The script uses **PowerShell parameter sets** to enforce that exactly one auth method is provided. No mixing, no hardcoding.
-
-| Method | Parameter Set | Recommended For |
-|---|---|---|
-| Client Secret | `ClientSecret` *(default)* | Quick setup, testing, automation pipelines |
-| Certificate (cert store) | `CertThumbprint` | Production — cert installed locally |
-| Certificate (.pfx file) | `CertFile` | Production — portable cert file |
-
-> ✅ Certificate-based auth is recommended for production as it avoids secret expiry issues and is considered more secure.
 
 ---
 
 ## 🚀 Usage
 
-### Client Secret
+The script supports **three authentication methods**. Pick the one that matches how your App Registration is configured.
+
+---
+
+### 🔑 Option 1 — Client Secret
 
 ```powershell
-.\IntuneScopeTagAssignment.ps1 `
+.\assignscopetag_allwindowsapps.ps1 `
     -TenantId     "contoso.onmicrosoft.com" `
     -ClientId     "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" `
     -ClientSecret "your-client-secret-here"
@@ -147,12 +81,12 @@ The script uses **PowerShell parameter sets** to enforce that exactly one auth m
 
 ---
 
-### Certificate — Thumbprint (from local cert store)
+### 🔐 Option 2 — Certificate Thumbprint
 
-> The certificate must be installed in the **CurrentUser** or **LocalMachine** certificate store on the machine running the script.
+Use this when the certificate is already installed in the local certificate store of the machine running the script.
 
 ```powershell
-.\IntuneScopeTagAssignment.ps1 `
+.\assignscopetag_allwindowsapps.ps1 `
     -TenantId              "contoso.onmicrosoft.com" `
     -ClientId              "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" `
     -CertificateThumbprint "AABBCCDDEEFF00112233445566778899AABBCCDD"
@@ -160,17 +94,24 @@ The script uses **PowerShell parameter sets** to enforce that exactly one auth m
 
 ---
 
-### Certificate — PFX File
+### 📄 Option 3 — Certificate PFX File
+
+Use this when the certificate is a `.pfx` file on disk rather than installed in the cert store.
 
 ```powershell
-.\IntuneScopeTagAssignment.ps1 `
+# With a password-protected PFX
+.\assignscopetag_allwindowsapps.ps1 `
     -TenantId            "contoso.onmicrosoft.com" `
     -ClientId            "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" `
     -CertificatePath     "C:\certs\myapp.pfx" `
     -CertificatePassword (Read-Host -AsSecureString "PFX password")
-```
 
-> 💡 Omit `-CertificatePassword` if your `.pfx` file has no password set.
+# Without a password
+.\assignscopetag_allwindowsapps.ps1 `
+    -TenantId        "contoso.onmicrosoft.com" `
+    -ClientId        "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" `
+    -CertificatePath "C:\certs\myapp.pfx"
+```
 
 ---
 
@@ -180,16 +121,18 @@ The script uses **PowerShell parameter sets** to enforce that exactly one auth m
 |---|---|---|---|
 | `-TenantId` | `String` | ✅ Always | Tenant ID or domain name (e.g. `contoso.onmicrosoft.com`) |
 | `-ClientId` | `String` | ✅ Always | Application (client) ID of your App Registration |
-| `-ClientSecret` | `String` | ✅ *ClientSecret set* | The client secret value from the App Registration |
-| `-CertificateThumbprint` | `String` | ✅ *CertThumbprint set* | Thumbprint of a certificate installed in the local cert store |
-| `-CertificatePath` | `String` | ✅ *CertFile set* | Full path to a `.pfx` certificate file |
-| `-CertificatePassword` | `SecureString` | ❌ Optional | Password for the `.pfx` file (only used with `-CertificatePath`) |
+| `-ClientSecret` | `String` | ✅ *Option 1 only* | The client secret value |
+| `-CertificateThumbprint` | `String` | ✅ *Option 2 only* | Thumbprint of the certificate in the local cert store |
+| `-CertificatePath` | `String` | ✅ *Option 3 only* | Full path to a `.pfx` certificate file |
+| `-CertificatePassword` | `SecureString` | ❌ Optional | Password for the `.pfx` file (Option 3 only, if applicable) |
+
+> ℹ️ Parameter sets are mutually exclusive — you cannot mix auth options in the same command.
 
 ---
 
 ## 📂 Supported Categories & Platforms
 
-After connecting, the script presents an **interactive menu**.
+After authenticating, the script presents an **interactive menu**.
 
 ### Categories
 
@@ -236,13 +179,7 @@ After connecting, the script presents an **interactive menu**.
  7. Summary       →  Print Success / Skipped / Failed counts
 ```
 
-**Pagination** — All Graph API calls follow `@odata.nextLink` automatically, so large environments with hundreds of items are fully covered.
-
-**PATCH logic** — The script builds the correct body per endpoint:
-- `mobileApps` and `deviceConfigurations` → body **includes** `@odata.type` (required by Graph)
-- `configurationPolicies` and `groupPolicyConfigurations` → body **omits** `@odata.type` (not accepted by Graph)
-
-> ⚠️ **Important:** The PATCH operation **replaces** the entire `roleScopeTagIds` array. If an item already has scope tags that you do not include in your input, they will be removed. Always provide all desired tags in a single run.
+> ⚠️ **Important:** The PATCH operation **replaces** the entire `roleScopeTagIds` array. If an item already has scope tags that are not included in your input, they will be removed. Always provide all desired tags in a single run.
 
 ---
 
@@ -275,7 +212,7 @@ Selected platform: iOS
 Enter Role Scope Tag name(s) to assign (comma-separated): EMEA,MobileDevices
 
 Looking up IDs for scope tag(s): EMEA, MobileDevices
-  Found: 'EMEA'         ->  ID: 5
+  Found: 'EMEA'          ->  ID: 5
   Found: 'MobileDevices' ->  ID: 12
 
 Fetching iOS Configurations from Intune...
@@ -309,7 +246,7 @@ Assigning scope tags...
 
 | Limitation | Detail |
 |---|---|
-| **iOS & macOS VPP Apps** | Scope tags on VPP apps must be configured at the **VPP token level** in the Intune portal. These are automatically detected and skipped with a clear `[SKIP]` message. |
+| **iOS & macOS VPP Apps** | Scope tags on VPP apps must be configured at the **VPP token level** in the Intune portal. These are automatically detected and skipped with a `[SKIP]` message. |
 | **Tags are replaced, not merged** | The PATCH replaces the full `roleScopeTagIds` array. Include all desired tags in a single run to avoid removing existing ones. |
 | **Graph Beta API** | This script uses the `/beta` endpoint. Microsoft may change beta behaviours without notice. |
 | **Client-side filtering** | Some endpoints (e.g. `deviceConfigurations`) don't support server-side OData filtering by platform, so all records are fetched and filtered locally — this may be slower in very large tenants. |
@@ -322,8 +259,8 @@ Assigning scope tags...
 <summary><strong>❌ "Failed to connect to Microsoft Graph"</strong></summary>
 
 - Double-check your `-TenantId`, `-ClientId`, and credential values
-- Ensure **admin consent** has been granted for all API permissions in the App Registration
-- Check that your client secret has not expired, or that your certificate is valid and trusted
+- Ensure admin consent has been granted for all API permissions
+- Check that your client secret has not expired, or that your certificate is valid
 
 </details>
 
@@ -340,24 +277,7 @@ Assigning scope tags...
 
 - Read the error message printed next to `[FAIL]` — it contains the Graph API error detail
 - Confirm your App Registration has `ReadWrite` (not just `Read`) permissions
-- Some item types may not support scope tag assignment at all via the Graph API
-
-</details>
-
-<details>
-<summary><strong>⚠️ "Module not found" or Import errors</strong></summary>
-
-Run the following to install the Microsoft Graph module:
-
-```powershell
-Install-Module Microsoft.Graph -Scope CurrentUser -Force
-```
-
-If you are on a managed machine, you may need to run PowerShell as **Administrator** or install to the `AllUsers` scope:
-
-```powershell
-Install-Module Microsoft.Graph -Scope AllUsers -Force
-```
+- Some item types may not support scope tag assignment via the Graph API
 
 </details>
 
