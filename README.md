@@ -209,9 +209,9 @@ Available platforms:
 Enter platform number (1-4): 2
 Selected platform: iOS
 
-Enter Role Scope Tag name(s) to assign (comma-separated): EMEA,MobileDevices
+Enter Role Scope Tag name(s) to assign (comma-separated): EMEA,Mobile
 
-Looking up IDs for scope tag(s): EMEA, MobileDevices
+Looking up IDs for scope tag(s): EMEA, Mobile
   Found: 'EMEA'          ->  ID: 5
   Found: 'MobileDevices' ->  ID: 12
 
