@@ -175,7 +175,7 @@ Write-Host ""
 Write-Host "What would you like to assign scope tags to?" -ForegroundColor Yellow
 Write-Host "  1 - Applications"
 Write-Host "  2 - Configurations"
-Write-Host "  3 - Compliance                   " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
+Write-Host "  3 - Compliance"
 Write-Host "  4 - Windows Platform Scripts     " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
 Write-Host "  5 - Windows Remediation Scripts  " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
 Write-Host "  6 - macOS Scripts                " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
@@ -189,10 +189,10 @@ $categoryChoice = Read-Host "Enter category number (1-9)"
 switch ($categoryChoice) {
     "1" { $categoryLabel = "Applications" }
     "2" { $categoryLabel = "Configurations" }
-    { $_ -in "3","4","5","6","7","8","9" } {
+    "3" { $categoryLabel = "Compliance" }
+    { $_ -in "4","5","6","7","8","9" } {
         # Map the choice number to a friendly label for the message
         $categoryNames = @{
-            "3" = "Compliance"
             "4" = "Windows Platform Scripts"
             "5" = "Windows Remediation Scripts"
             "6" = "macOS Scripts"
@@ -474,12 +474,87 @@ if ($categoryChoice -eq "2") {
     }
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# COMPLIANCE
+# All compliance policies live under a single endpoint (deviceCompliancePolicies).
+# Platform filtering is done client-side on the @odata.type property.
+# ─────────────────────────────────────────────────────────────────────────────
+if ($categoryChoice -eq "3") {
+    switch ($platformChoice) {
+        "1" {
+            $platformLabel = "Android"
+            $itemNoun      = "compliance policy(ies)"
+            $sources = @(
+                # Android compliance policies:
+                #   androidCompliancePolicy                  — Device Administrator
+                #   androidWorkProfileCompliancePolicy       — Work Profile
+                #   androidDeviceOwnerCompliancePolicy       — Fully Managed / AOSP
+                [PSCustomObject]@{
+                    label         = "Compliance policies (deviceCompliancePolicies)"
+                    uri           = "https://graph.microsoft.com/beta/deviceManagement/deviceCompliancePolicies?`$orderby=displayName asc"
+                    clientFilter  = { $_.('@odata.type') -match 'android|Android' }
+                    patchEndpoint = "deviceManagement/deviceCompliancePolicies"
+                    nameField     = "displayName"
+                }
+            )
+        }
+        "2" {
+            $platformLabel = "iOS"
+            $itemNoun      = "compliance policy(ies)"
+            $sources = @(
+                # iOS compliance policies:
+                #   iosCompliancePolicy   — covers iOS and iPadOS
+                [PSCustomObject]@{
+                    label         = "Compliance policies (deviceCompliancePolicies)"
+                    uri           = "https://graph.microsoft.com/beta/deviceManagement/deviceCompliancePolicies?`$orderby=displayName asc"
+                    clientFilter  = { $_.('@odata.type') -like '*ios*' -or $_.('@odata.type') -like '*iOS*' }
+                    patchEndpoint = "deviceManagement/deviceCompliancePolicies"
+                    nameField     = "displayName"
+                }
+            )
+        }
+        "3" {
+            $platformLabel = "macOS"
+            $itemNoun      = "compliance policy(ies)"
+            $sources = @(
+                # macOS compliance policies:
+                #   macOSCompliancePolicy
+                [PSCustomObject]@{
+                    label         = "Compliance policies (deviceCompliancePolicies)"
+                    uri           = "https://graph.microsoft.com/beta/deviceManagement/deviceCompliancePolicies?`$orderby=displayName asc"
+                    clientFilter  = { $_.('@odata.type') -match 'macOS|macOs' }
+                    patchEndpoint = "deviceManagement/deviceCompliancePolicies"
+                    nameField     = "displayName"
+                }
+            )
+        }
+        "4" {
+            $platformLabel = "Windows"
+            $itemNoun      = "compliance policy(ies)"
+            $sources = @(
+                # Windows compliance policies:
+                #   windows10CompliancePolicy                — Windows 10/11 MDM
+                #   windows10MobileCompliancePolicy          — Windows 10 Mobile (legacy)
+                #   windowsPhone81CompliancePolicy           — Windows Phone 8.1 (legacy)
+                #   windows81CompliancePolicy                — Windows 8.1 (legacy)
+                [PSCustomObject]@{
+                    label         = "Compliance policies (deviceCompliancePolicies)"
+                    uri           = "https://graph.microsoft.com/beta/deviceManagement/deviceCompliancePolicies?`$orderby=displayName asc"
+                    clientFilter  = { $_.('@odata.type') -match 'windows|Windows' }
+                    patchEndpoint = "deviceManagement/deviceCompliancePolicies"
+                    nameField     = "displayName"
+                }
+            )
+        }
+        default {
+            Write-Host "Invalid platform choice. Exiting." -ForegroundColor Red
+            exit 1
+        }
+    }
+}
+
 Write-Host ""
 Write-Host "Selected platform: $platformLabel" -ForegroundColor Green
-
-#endregion
-
-#region --- Scope Tag name input ---
 # The user enters one or more Scope Tag NAMES (not IDs).
 # Names are comma-separated and trimmed of whitespace.
 # The script resolves names to IDs in the next region.
@@ -653,7 +728,7 @@ Write-Host "============================================" -ForegroundColor Cyan
 
 if ($skippedItems.Count -gt 0) {
     Write-Host ""
-    Write-Host "Skipped items (scope tags must be set at the VPP token level in Intune):" -ForegroundColor Yellow
+    Write-Host "Skipped items (cannot assign scope tags via API — VPP apps require tag assignment at the VPP token level in Intune):" -ForegroundColor Yellow
     $skippedItems | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
 }
 
