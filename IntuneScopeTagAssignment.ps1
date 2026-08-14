@@ -1,6 +1,6 @@
 # ============================================================
 #  SCRIPT   : IntuneScopeTagAssignment.ps1
-#  VERSION  : 2.1
+#  VERSION  : 2.2
 #  AUTHOR   : Tom Machado
 #  CREATED  : 2026-06-19
 #  UPDATED  : 2026-08-14
@@ -10,8 +10,9 @@
 #  -----------
 #  This interactive script assigns one or more Intune Role Scope Tags
 #  to a bulk set of Intune objects (Applications, Device Configuration
-#  profiles, Compliance policies, Windows Platform Scripts, or
-#  Windows Remediation Scripts) for a given platform.
+#  profiles, Compliance policies, Windows Platform Scripts,
+#  Windows Remediation Scripts, macOS Scripts, or macOS Custom Attributes)
+#  for a given platform.
 #
 #  The script will:
 #    1. Connect to Microsoft Graph using app-only authentication
@@ -179,8 +180,8 @@ Write-Host "  2 - Configurations"
 Write-Host "  3 - Compliance"
 Write-Host "  4 - Windows Platform Scripts"
 Write-Host "  5 - Windows Remediation Scripts"
-Write-Host "  6 - macOS Scripts                " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
-Write-Host "  7 - macOS Custom Attributes      " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
+Write-Host "  6 - macOS Scripts"
+Write-Host "  7 - macOS Custom Attributes"
 Write-Host "  8 - App Configuration Policies   " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
 Write-Host "  9 - App Protection Policies      " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
 Write-Host ""
@@ -193,11 +194,11 @@ switch ($categoryChoice) {
     "3" { $categoryLabel = "Compliance" }
     "4" { $categoryLabel = "Windows Platform Scripts" }
     "5" { $categoryLabel = "Windows Remediation Scripts" }
-    { $_ -in "6","7","8","9" } {
+    "6" { $categoryLabel = "macOS Scripts" }
+    "7" { $categoryLabel = "macOS Custom Attributes" }
+    { $_ -in "8","9" } {
         # Map the choice number to a friendly label for the message
         $categoryNames = @{
-            "6" = "macOS Scripts"
-            "7" = "macOS Custom Attributes"
             "8" = "App Configuration Policies"
             "9" = "App Protection Policies"
         }
@@ -225,11 +226,17 @@ Write-Host "Selected category: $categoryLabel" -ForegroundColor Green
 #
 # NOTE: Categories 4 (Windows Platform Scripts) and 5 (Windows Remediation Scripts)
 # are Windows-only — the platform prompt is skipped for these categories.
+# Categories 6 (macOS Scripts) and 7 (macOS Custom Attributes) are macOS-only —
+# the platform prompt is likewise skipped for these categories.
 
 # Categories 4 and 5 are inherently Windows — skip the platform menu.
 if ($categoryChoice -in "4","5") {
     $platformChoice = "4"   # Windows (used only for the summary label)
     $platformLabel  = "Windows"
+# Categories 6 and 7 are inherently macOS — skip the platform menu.
+} elseif ($categoryChoice -in "6","7") {
+    $platformChoice = "3"   # macOS (used only for the summary label)
+    $platformLabel  = "macOS"
 } else {
     Write-Host ""
     Write-Host "Available platforms:" -ForegroundColor Yellow
@@ -604,6 +611,52 @@ if ($categoryChoice -eq "5") {
             uri           = "https://graph.microsoft.com/beta/deviceManagement/deviceHealthScripts?`$orderby=displayName asc"
             clientFilter  = $null   # All results are Windows — no filter needed
             patchEndpoint = "deviceManagement/deviceHealthScripts"
+            nameField     = "displayName"
+        }
+    )
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# macOS SCRIPTS
+# macOS shell scripts (.sh files) uploaded via Intune live under
+# deviceShellScripts. There is only one endpoint — no platform filter
+# needed (all objects here are macOS by definition).
+# The PATCH body requires no @odata.type — only roleScopeTagIds.
+# ─────────────────────────────────────────────────────────────────────────────
+if ($categoryChoice -eq "6") {
+    $itemNoun = "script(s)"
+    $sources = @(
+        # macOS Scripts (shell scripts deployed via Intune)
+        # These appear in the Intune "Scripts" section under
+        # Devices > macOS > Shell scripts.
+        [PSCustomObject]@{
+            label         = "macOS Scripts (deviceShellScripts)"
+            uri           = "https://graph.microsoft.com/beta/deviceManagement/deviceShellScripts?`$orderby=displayName asc"
+            clientFilter  = $null   # All results are macOS — no filter needed
+            patchEndpoint = "deviceManagement/deviceShellScripts"
+            nameField     = "displayName"
+        }
+    )
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# macOS CUSTOM ATTRIBUTES
+# macOS custom attribute shell scripts live under
+# deviceCustomAttributeShellScripts. There is only one endpoint — no platform
+# filter needed (all objects here are macOS by definition).
+# The PATCH body requires no @odata.type — only roleScopeTagIds.
+# ─────────────────────────────────────────────────────────────────────────────
+if ($categoryChoice -eq "7") {
+    $itemNoun = "custom attribute(s)"
+    $sources = @(
+        # macOS Custom Attributes (shell scripts that return custom inventory data)
+        # These appear in the Intune "Custom attributes" section under
+        # Devices > macOS > Custom attributes.
+        [PSCustomObject]@{
+            label         = "macOS Custom Attributes (deviceCustomAttributeShellScripts)"
+            uri           = "https://graph.microsoft.com/beta/deviceManagement/deviceCustomAttributeShellScripts?`$orderby=displayName asc"
+            clientFilter  = $null   # All results are macOS — no filter needed
+            patchEndpoint = "deviceManagement/deviceCustomAttributeShellScripts"
             nameField     = "displayName"
         }
     )
