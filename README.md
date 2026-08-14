@@ -140,9 +140,9 @@ After authenticating, the script presents an **interactive menu**.
 |---|---|---|
 | 1 | Applications | ✅ Available |
 | 2 | Configurations | ✅ Available |
-| 3 | Compliance Policies | 🔜 Coming Soon |
-| 4 | Windows Platform Scripts | 🔜 Coming Soon |
-| 5 | Windows Remediation Scripts | 🔜 Coming Soon |
+| 3 | Compliance Policies | ✅ Available |
+| 4 | Windows Platform Scripts | ✅ Available |
+| 5 | Windows Remediation Scripts | ✅ Available |
 | 6 | macOS Scripts | 🔜 Coming Soon |
 | 7 | macOS Custom Attributes | 🔜 Coming Soon |
 | 8 | App Configuration Policies | 🔜 Coming Soon |
