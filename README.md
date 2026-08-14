@@ -143,8 +143,8 @@ After authenticating, the script presents an **interactive menu**.
 | 3 | Compliance Policies | ✅ Available |
 | 4 | Windows Platform Scripts | ✅ Available |
 | 5 | Windows Remediation Scripts | ✅ Available |
-| 6 | macOS Scripts | 🔜 Coming Soon |
-| 7 | macOS Custom Attributes | 🔜 Coming Soon |
+| 6 | macOS Scripts | ✅ Available |
+| 7 | macOS Custom Attributes | ✅ Available |
 | 8 | App Configuration Policies | 🔜 Coming Soon |
 | 9 | App Protection Policies | 🔜 Coming Soon |
 
