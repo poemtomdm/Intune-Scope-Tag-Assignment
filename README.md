@@ -73,7 +73,7 @@ The script supports **three authentication methods**. Pick the one that matches 
 ### 🔑 Option 1 — Client Secret
 
 ```powershell
-.\assignscopetag_allwindowsapps.ps1 `
+.\IntuneScopeTagAssignment.ps1 `
     -TenantId     "contoso.onmicrosoft.com" `
     -ClientId     "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" `
     -ClientSecret "your-client-secret-here"
@@ -86,7 +86,7 @@ The script supports **three authentication methods**. Pick the one that matches 
 Use this when the certificate is already installed in the local certificate store of the machine running the script.
 
 ```powershell
-.\assignscopetag_allwindowsapps.ps1 `
+.\IntuneScopeTagAssignment.ps1 `
     -TenantId              "contoso.onmicrosoft.com" `
     -ClientId              "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" `
     -CertificateThumbprint "AABBCCDDEEFF00112233445566778899AABBCCDD"
@@ -100,14 +100,14 @@ Use this when the certificate is a `.pfx` file on disk rather than installed in 
 
 ```powershell
 # With a password-protected PFX
-.\assignscopetag_allwindowsapps.ps1 `
+.\IntuneScopeTagAssignment.ps1 `
     -TenantId            "contoso.onmicrosoft.com" `
     -ClientId            "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" `
     -CertificatePath     "C:\certs\myapp.pfx" `
     -CertificatePassword (Read-Host -AsSecureString "PFX password")
 
 # Without a password
-.\assignscopetag_allwindowsapps.ps1 `
+.\IntuneScopeTagAssignment.ps1 `
     -TenantId        "contoso.onmicrosoft.com" `
     -ClientId        "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" `
     -CertificatePath "C:\certs\myapp.pfx"
