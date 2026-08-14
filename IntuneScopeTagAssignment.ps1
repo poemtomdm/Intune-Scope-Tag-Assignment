@@ -1,5 +1,5 @@
 # ============================================================
-#  SCRIPT   : Assign-IntuneScopeTags.ps1
+#  SCRIPT   : IntuneScopeTagAssignment.ps1
 #  VERSION  : 2.0
 #  AUTHOR   : Tom Machado
 #  CREATED  : 2026-06-19
