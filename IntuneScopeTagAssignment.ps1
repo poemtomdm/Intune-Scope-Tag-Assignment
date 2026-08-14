@@ -1,6 +1,6 @@
 # ============================================================
 #  SCRIPT   : IntuneScopeTagAssignment.ps1
-#  VERSION  : 2.0
+#  VERSION  : 2.1
 #  AUTHOR   : Tom Machado
 #  CREATED  : 2026-06-19
 #  UPDATED  : 2026-08-14
@@ -9,8 +9,9 @@
 #  DESCRIPTION
 #  -----------
 #  This interactive script assigns one or more Intune Role Scope Tags
-#  to a bulk set of Intune objects (Applications or Device Configuration
-#  profiles) for a given platform (Android, iOS, macOS, Windows).
+#  to a bulk set of Intune objects (Applications, Device Configuration
+#  profiles, Compliance policies, Windows Platform Scripts, or
+#  Windows Remediation Scripts) for a given platform.
 #
 #  The script will:
 #    1. Connect to Microsoft Graph using app-only authentication
@@ -176,8 +177,8 @@ Write-Host "What would you like to assign scope tags to?" -ForegroundColor Yello
 Write-Host "  1 - Applications"
 Write-Host "  2 - Configurations"
 Write-Host "  3 - Compliance"
-Write-Host "  4 - Windows Platform Scripts     " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
-Write-Host "  5 - Windows Remediation Scripts  " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
+Write-Host "  4 - Windows Platform Scripts"
+Write-Host "  5 - Windows Remediation Scripts"
 Write-Host "  6 - macOS Scripts                " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
 Write-Host "  7 - macOS Custom Attributes      " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
 Write-Host "  8 - App Configuration Policies   " -NoNewline; Write-Host "(Coming Soon)" -ForegroundColor DarkGray
@@ -190,11 +191,11 @@ switch ($categoryChoice) {
     "1" { $categoryLabel = "Applications" }
     "2" { $categoryLabel = "Configurations" }
     "3" { $categoryLabel = "Compliance" }
-    { $_ -in "4","5","6","7","8","9" } {
+    "4" { $categoryLabel = "Windows Platform Scripts" }
+    "5" { $categoryLabel = "Windows Remediation Scripts" }
+    { $_ -in "6","7","8","9" } {
         # Map the choice number to a friendly label for the message
         $categoryNames = @{
-            "4" = "Windows Platform Scripts"
-            "5" = "Windows Remediation Scripts"
             "6" = "macOS Scripts"
             "7" = "macOS Custom Attributes"
             "8" = "App Configuration Policies"
@@ -221,16 +222,25 @@ Write-Host "Selected category: $categoryLabel" -ForegroundColor Green
 # Depending on the combination of category + platform, the script will query
 # different Graph API endpoints and apply different client-side filters.
 # See the "GRAPH API ENDPOINTS USED" section at the top for the full mapping.
+#
+# NOTE: Categories 4 (Windows Platform Scripts) and 5 (Windows Remediation Scripts)
+# are Windows-only — the platform prompt is skipped for these categories.
 
-Write-Host ""
-Write-Host "Available platforms:" -ForegroundColor Yellow
-Write-Host "  1 - Android"
-Write-Host "  2 - iOS"
-Write-Host "  3 - macOS"
-Write-Host "  4 - Windows"
-Write-Host ""
+# Categories 4 and 5 are inherently Windows — skip the platform menu.
+if ($categoryChoice -in "4","5") {
+    $platformChoice = "4"   # Windows (used only for the summary label)
+    $platformLabel  = "Windows"
+} else {
+    Write-Host ""
+    Write-Host "Available platforms:" -ForegroundColor Yellow
+    Write-Host "  1 - Android"
+    Write-Host "  2 - iOS"
+    Write-Host "  3 - macOS"
+    Write-Host "  4 - Windows"
+    Write-Host ""
 
-$platformChoice = Read-Host "Enter platform number (1-4)"
+    $platformChoice = Read-Host "Enter platform number (1-4)"
+}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # APPLICATIONS
@@ -553,8 +563,55 @@ if ($categoryChoice -eq "3") {
     }
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# WINDOWS PLATFORM SCRIPTS
+# All Windows PowerShell / shell scripts uploaded via Intune live under
+# deviceManagementScripts. There is only one endpoint — no platform filter
+# needed (all objects here are Windows by definition).
+# The PATCH body requires no @odata.type — only roleScopeTagIds.
+# ─────────────────────────────────────────────────────────────────────────────
+if ($categoryChoice -eq "4") {
+    $itemNoun = "script(s)"
+    $sources = @(
+        # Windows Platform Scripts (PowerShell scripts & shell scripts)
+        # Includes both PowerShell scripts (.ps1) and shell scripts,
+        # as shown in the "Scripts" section of the Intune Devices blade.
+        [PSCustomObject]@{
+            label         = "Windows Platform Scripts (deviceManagementScripts)"
+            uri           = "https://graph.microsoft.com/beta/deviceManagement/deviceManagementScripts?`$orderby=displayName asc"
+            clientFilter  = $null   # All results are Windows — no filter needed
+            patchEndpoint = "deviceManagement/deviceManagementScripts"
+            nameField     = "displayName"
+        }
+    )
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# WINDOWS REMEDIATION SCRIPTS
+# Proactive Remediations (detection + remediation script pairs) live under
+# deviceHealthScripts. There is only one endpoint — no platform filter needed
+# (all objects here are Windows by definition).
+# The PATCH body requires no @odata.type — only roleScopeTagIds.
+# ─────────────────────────────────────────────────────────────────────────────
+if ($categoryChoice -eq "5") {
+    $itemNoun = "remediation(s)"
+    $sources = @(
+        # Windows Remediation Scripts (Proactive Remediations / deviceHealthScripts)
+        # Each object is a detection+remediation script pair visible in the
+        # Intune "Remediations" blade under Devices > Scripts and remediations.
+        [PSCustomObject]@{
+            label         = "Windows Remediation Scripts (deviceHealthScripts)"
+            uri           = "https://graph.microsoft.com/beta/deviceManagement/deviceHealthScripts?`$orderby=displayName asc"
+            clientFilter  = $null   # All results are Windows — no filter needed
+            patchEndpoint = "deviceManagement/deviceHealthScripts"
+            nameField     = "displayName"
+        }
+    )
+}
+
 Write-Host ""
 Write-Host "Selected platform: $platformLabel" -ForegroundColor Green
+
 # The user enters one or more Scope Tag NAMES (not IDs).
 # Names are comma-separated and trimmed of whitespace.
 # The script resolves names to IDs in the next region.
